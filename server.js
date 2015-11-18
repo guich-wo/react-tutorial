@@ -15,6 +15,7 @@ var path = require('path');
 var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
+var _ = require('underscore');
 
 var COMMENTS_FILE = path.join(__dirname, 'comments.json');
 
@@ -62,6 +63,28 @@ app.post('/api/comments', function(req, res) {
   });
 });
 
+app.delete('/api/comments', function(req, res) {
+  fs.readFile(COMMENTS_FILE, function(err, data) {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    var comments = JSON.parse(data);
+    var commentId = req.body.commentId,
+    comments = _.reject(comments, function(comment){
+      return comment.id == commentId;
+    });
+
+    fs.writeFile(COMMENTS_FILE, JSON.stringify(comments, null, 4), function(err) {
+      if (err) {
+        console.error(err);
+        process.exit(1);
+      }
+      res.setHeader('Cache-Control', 'no-cache');
+      res.json(comments);
+    });
+  });
+});
 
 app.listen(app.get('port'), function() {
   console.log('Server started: http://localhost:' + app.get('port') + '/');
